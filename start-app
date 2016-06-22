@@ -1,0 +1,29 @@
+#!/bin/bash
+
+#Create sftp server with folder share
+set -e
+export DEBIAN_FRONTEND=noninteractive
+useraddOptions="--no-user-group"
+user="pmuser"
+pass="123"
+chpasswdOptions=""
+useradd $useraddOptions $user
+echo "$user:$pass" | chpasswd $chpasswdOptions
+
+mkdir -p /home/$user
+chown root:root /home/$user
+chmod 755 /home/$user
+
+# Add SSH keys to authorized_keys with valid permissions
+if [ -d /home/$user/.ssh/keys ]; then
+   cat /home/$user/.ssh/keys/* >> /home/$user/.ssh/authorized_keys
+   chown $user /home/$user/.ssh/authorized_keys
+   chmod 600 /home/$user/.ssh/authorized_keys
+fi
+
+# Generate unique ssh keys for this container
+dpkg-reconfigure openssh-server
+exec /usr/sbin/sshd -D -e &
+
+#Start karaf
+exec /pm/sampledocker-1.0-SNAPSHOT/bin/karaf
